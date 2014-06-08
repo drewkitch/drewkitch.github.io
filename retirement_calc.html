@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/knockout/3.1.0/knockout-min.js"></script>
+  <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/skeleton/1.2/base.min.css" />
+  <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/skeleton/1.2/skeleton.min.css" />
+  <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/skeleton/1.2/layout.css" />
+  <style type="text/css">
+    .calc-inputs label {
+      padding-left: 15px;
+    }
+    .calc-results .result-amount {
+      padding-left: 10px;
+    }
+    .calc-results > div:first-child {
+      border-top: 1px dotted gray;
+    }
+    .calc-results > div {
+      border-bottom: 1px dotted gray;
+      padding-bottom: 2px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="sixteen columns">
+    <h2>The Retirement Calculator</h2>
+  </div>
+  <div class="four columns calc-inputs" style="margin-bottom: 20px;">
+    <div>
+      <label for="current-savings">Current Savings</label>
+      <span>$&nbsp;</span><input id="current-savings" data-bind="value: currentSavings" />
+    </div>
+    <div>
+      <label for="monthly-contribution">Monthly Contribution</label>
+      <span>$&nbsp;</span><input id="monthly-contribution" data-bind="value: monthlyContribution" />
+    </div>
+    <div>
+      <label for="years-to-invest">Years to Invest</label>
+      <span>&nbsp;&nbsp;&nbsp;</span><input id="years-to-invest" data-bind="value: yearsToInvest" />
+    </div>
+  </div>
+  <div class="twelve columns calc-results">
+    <div data-bind="visible: investmentResult() != '0'">
+      <label>Savings Acquired (@ 5% rate of return)</label>
+      <span class="result-amount">$<span data-bind="text: investmentResult()"></span></span>
+    </div>
+    <div data-bind="visible: annualSafeDraw() != '0'">
+      <label>Safe Draw - Annual (@ 3%)</label>
+      <span class="result-amount">$<span data-bind="text: annualSafeDraw()"></span></span>
+    </div>
+    <div data-bind="visible: monthlySafeDraw() != '0'">
+      <label>Safe Draw - Monthly</label>
+      <span class="result-amount">$<span data-bind="text: monthlySafeDraw()"></span></span>
+    </div>
+    <div data-bind="visible: dailySafeDraw() != '0'">
+      <label>Safe Draw - Daily</label>
+      <span class="result-amount">$<span data-bind="text: dailySafeDraw()"></span></span>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+  var RetirementCalculator = function() {
+    // TODO - option to change rate of return
+
+    var self = this;
+    self.currentSavings = ko.observable();
+    self.monthlyContribution = ko.observable();
+    self.yearsToInvest = ko.observable();
+
+    self.investmentResult = ko.computed(function() {
+      return addCommas(calculateInvestmentResult());
+    });
+
+    self.annualSafeDraw = ko.computed(function() {
+      return addCommas(calculateAnnualSafeDraw());
+    });
+
+    self.monthlySafeDraw = ko.computed(function() {
+      var amount = Math.floor(calculateAnnualSafeDraw() / 12);
+      return addCommas(amount);
+    });
+
+    self.dailySafeDraw = ko.computed(function() {
+      var amount = Math.floor(calculateAnnualSafeDraw() / 365);
+      return addCommas(amount);
+    });
+    
+    function calculateAnnualSafeDraw() {
+      return Math.floor(calculateInvestmentResult() * 0.03);
+    };
+
+    function calculateInvestmentResult() {
+      var currentSavings = getNumeric(self.currentSavings()) || 0;
+      var monthlyContribution = getNumeric(self.monthlyContribution()) || 0;
+      var yearsToInvest = getNumeric(self.yearsToInvest());
+
+      if (!yearsToInvest || yearsToInvest > 200) {
+        return 0;
+      }
+
+      var result = currentSavings;
+      for (i=0; i < yearsToInvest; i++) {
+        result += monthlyContribution * 12;
+        var compound = Math.floor(result * 0.05);
+        result += compound;
+      }
+      return result;
+    };
+
+    function addCommas(intNum) {
+      return (intNum + '').replace(/(\d)(?=(\d{3})+$)/g, '$1,');
+    }
+
+    function getNumeric(e) {
+      if (typeof(e) != 'string') {
+        return NaN;
+      }
+      return parseInt(e.replace(/\,/g,''), 10);
+    };
+
+  };
+
+  ko.applyBindings(new RetirementCalculator());
+</script>
+</body>
+</html>
