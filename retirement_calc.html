@@ -10,6 +10,7 @@
   <style type="text/css">
     .calc-inputs label {
       padding-left: 15px;
+      padding-top: 5px;
     }
     .calc-results .result-amount {
       padding-left: 10px;
@@ -39,15 +40,15 @@
     </div>
     <div>
       <label for="annual-return-on-investment">Annual Return on Investment</label>
-      <span>&nbsp;&nbsp;&nbsp;</span><input id="annual-return-on-investment" data-bind="value: annualReturnOnInvestment || '5'" /><span>&nbsp;%</span>
+      <span>&nbsp;&nbsp;&nbsp;</span><input id="annual-return-on-investment" data-bind="value: annualReturnOnInvestment" /><span>&nbsp;%</span>
     </div>
     <div>
       <label for="draw-rate">Draw Rate</label>
-      <span>&nbsp;&nbsp;&nbsp;</span><input id="draw-rate" data-bind="value: drawRate || '3'" /><span>&nbsp;%</span>
+      <span>&nbsp;&nbsp;&nbsp;</span><input id="draw-rate" data-bind="value: drawRate" /><span>&nbsp;%</span>
     </div>
     <div>
-      <label for="years-to-invest">Years to Invest</label>
-      <span>&nbsp;&nbsp;&nbsp;</span><input id="years-to-invest" data-bind="value: yearsToInvest" />
+      <label for="years-to-retirement">Years to Retirement</label>
+      <span>&nbsp;&nbsp;&nbsp;</span><input id="years-to-retirement" data-bind="value: yearsToRetirement" />
     </div>
   </div>
   <div class="twelve columns calc-results">
@@ -79,31 +80,43 @@
     var self = this;
     self.currentSavings = ko.observable();
     self.monthlyContribution = ko.observable();
-    self.annualReturnOnInvestment = ko.observable(5);
-    self.drawRate = ko.observable(3);
-    self.yearsToInvest = ko.observable();
+    self.annualReturnOnInvestment = ko.observable();
+    self.drawRate = ko.observable();
+    self.yearsToRetirement = ko.observable();
 
-    function getNumeric(e) {
+    function getInt(e) {
       if (typeof(e) != 'string') {
         return NaN;
       }
       return parseInt(e.replace(/\,/g,''), 10);
     };
 
-    function calculateInvestmentResult() {
-      var currentSavings = getNumeric(self.currentSavings()) || 0;
-      var monthlyContribution = getNumeric(self.monthlyContribution()) || 0;
-      var monthlyRateOfReturn = ((getNumeric(self.annualReturnOnInvestment()) || 5) * 0.01) / 12;
-      var monthsToInvest = (getNumeric(self.yearsToInvest()) || 0) * 12;
+    function getFloat(e) {
+      if (typeof(e) != 'string') {
+        return NaN;
+      }
+      return parseFloat(e.replace(/\,/g,''), 10);
+    };
 
-      if (monthsToInvest < 12 || monthsToInvest > 2400) {
+    function getDrawRate() {
+      return (getFloat(self.drawRate()) || 0) * 0.01;
+    }
+
+    function calculateInvestmentResult() {
+      var currentSavings = getInt(self.currentSavings()) || 0;
+      var monthlyContribution = getInt(self.monthlyContribution()) || 0;
+      var monthlyRateOfReturn = ((getFloat(self.annualReturnOnInvestment()) || 0) * 0.01) / 12;
+      var monthsToRetirement = (getInt(self.yearsToRetirement()) || 0) * 12;
+      var drawRate = getDrawRate();
+
+      if (monthsToRetirement < 12 || monthsToRetirement > 2400 || drawRate > 0.08 || drawRate <= 0 || currentSavings < 0 || monthlyContribution < 0 || monthlyRateOfReturn < 0) {
         return 0;
       }
 
-      var cumulativeCurrentSavingsGrowth = cumulativeGrowthOfContribution(monthlyRateOfReturn, currentSavings, monthsToInvest);
+      var cumulativeCurrentSavingsGrowth = cumulativeGrowthOfContribution(monthlyRateOfReturn, currentSavings, monthsToRetirement);
 
       var cumulativeContributionGrowth = 0;
-      for (var monthsRemaining = monthsToInvest; monthsRemaining > 0; monthsRemaining--) {
+      for (var monthsRemaining = monthsToRetirement; monthsRemaining >= 0; monthsRemaining--) {
         cumulativeContributionGrowth += cumulativeGrowthOfContribution(monthlyRateOfReturn, monthlyContribution, monthsRemaining);
       }
 
@@ -119,7 +132,7 @@
     }
 
     function calculateAnnualSafeDraw() {
-      var drawRate = (getNumeric(self.drawRate()) || 3) * 0.01;
+      var drawRate = getDrawRate();
       return Math.floor(calculateInvestmentResult() * drawRate);
     };
 
