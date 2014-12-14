@@ -38,17 +38,25 @@
       <span>$&nbsp;</span><input id="monthly-contribution" data-bind="value: monthlyContribution" />
     </div>
     <div>
+      <label for="annual-return-on-investment">Annual Return on Investment</label>
+      <span>&nbsp;&nbsp;&nbsp;</span><input id="annual-return-on-investment" data-bind="value: annualReturnOnInvestment || '5'" /><span>&nbsp;%</span>
+    </div>
+    <div>
+      <label for="draw-rate">Draw Rate</label>
+      <span>&nbsp;&nbsp;&nbsp;</span><input id="draw-rate" data-bind="value: drawRate || '3'" /><span>&nbsp;%</span>
+    </div>
+    <div>
       <label for="years-to-invest">Years to Invest</label>
       <span>&nbsp;&nbsp;&nbsp;</span><input id="years-to-invest" data-bind="value: yearsToInvest" />
     </div>
   </div>
   <div class="twelve columns calc-results">
     <div data-bind="visible: investmentResult() != '0'">
-      <label>Savings Acquired (@ 5% rate of return)</label>
+      <label>Savings Acquired (@ <span data-bind="text: annualReturnOnInvestment"></span>% annual return)</label>
       <span class="result-amount">$<span data-bind="text: investmentResult()"></span></span>
     </div>
     <div data-bind="visible: annualSafeDraw() != '0'">
-      <label>Safe Draw - Annual (@ 3%)</label>
+      <label>Safe Draw - Annual (@ <span data-bind="text: drawRate"></span>% draw)</label>
       <span class="result-amount">$<span data-bind="text: annualSafeDraw()"></span></span>
     </div>
     <div data-bind="visible: monthlySafeDraw() != '0'">
@@ -61,14 +69,63 @@
     </div>
   </div>
 </div>
+
+<!-- Start of SimpleHitCounter Code -->
+<img style="display:none;" src="http://simplehitcounter.com/hit.php?uid=1824662&f=255&b=16777215" border="0" height="18" width="83" alt="web counter">
+<!-- End of SimpleHitCounter Code -->
+
 <script type="text/javascript">
   var RetirementCalculator = function() {
-    // TODO - option to change rate of return
-
     var self = this;
     self.currentSavings = ko.observable();
     self.monthlyContribution = ko.observable();
+    self.annualReturnOnInvestment = ko.observable(5);
+    self.drawRate = ko.observable(3);
     self.yearsToInvest = ko.observable();
+
+    function getNumeric(e) {
+      if (typeof(e) != 'string') {
+        return NaN;
+      }
+      return parseInt(e.replace(/\,/g,''), 10);
+    };
+
+    function calculateInvestmentResult() {
+      var currentSavings = getNumeric(self.currentSavings()) || 0;
+      var monthlyContribution = getNumeric(self.monthlyContribution()) || 0;
+      var monthlyRateOfReturn = ((getNumeric(self.annualReturnOnInvestment()) || 5) * 0.01) / 12;
+      var monthsToInvest = (getNumeric(self.yearsToInvest()) || 0) * 12;
+
+      if (monthsToInvest < 12 || monthsToInvest > 2400) {
+        return 0;
+      }
+
+      var cumulativeCurrentSavingsGrowth = cumulativeGrowthOfContribution(monthlyRateOfReturn, currentSavings, monthsToInvest);
+
+      var cumulativeContributionGrowth = 0;
+      for (var monthsRemaining = monthsToInvest; monthsRemaining > 0; monthsRemaining--) {
+        cumulativeContributionGrowth += cumulativeGrowthOfContribution(monthlyRateOfReturn, monthlyContribution, monthsRemaining);
+      }
+
+      return cumulativeCurrentSavingsGrowth + cumulativeContributionGrowth;
+    };
+
+    function cumulativeGrowthOfContribution(monthlyRateOfReturn, amountContributed, monthsRemainingToRetirement) {
+      var cumulativeGrowth = amountContributed;
+      for (var month = 1; month <= monthsRemainingToRetirement; month++) {
+        cumulativeGrowth += Math.floor(cumulativeGrowth * monthlyRateOfReturn);
+      }
+      return cumulativeGrowth;
+    }
+
+    function calculateAnnualSafeDraw() {
+      var drawRate = (getNumeric(self.drawRate()) || 3) * 0.01;
+      return Math.floor(calculateInvestmentResult() * drawRate);
+    };
+
+    function addCommas(intNum) {
+      return (intNum + '').replace(/(\d)(?=(\d{3})+$)/g, '$1,');
+    }
 
     self.investmentResult = ko.computed(function() {
       return addCommas(calculateInvestmentResult());
@@ -87,39 +144,6 @@
       var amount = Math.floor(calculateAnnualSafeDraw() / 365);
       return addCommas(amount);
     });
-    
-    function calculateAnnualSafeDraw() {
-      return Math.floor(calculateInvestmentResult() * 0.03);
-    };
-
-    function calculateInvestmentResult() {
-      var currentSavings = getNumeric(self.currentSavings()) || 0;
-      var monthlyContribution = getNumeric(self.monthlyContribution()) || 0;
-      var yearsToInvest = getNumeric(self.yearsToInvest());
-
-      if (!yearsToInvest || yearsToInvest > 200) {
-        return 0;
-      }
-
-      var result = currentSavings;
-      for (i=0; i < yearsToInvest; i++) {
-        result += monthlyContribution * 12;
-        var compound = Math.floor(result * 0.05);
-        result += compound;
-      }
-      return result;
-    };
-
-    function addCommas(intNum) {
-      return (intNum + '').replace(/(\d)(?=(\d{3})+$)/g, '$1,');
-    }
-
-    function getNumeric(e) {
-      if (typeof(e) != 'string') {
-        return NaN;
-      }
-      return parseInt(e.replace(/\,/g,''), 10);
-    };
 
   };
 
