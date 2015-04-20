@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <style type="text/css">
+    .container {
+      margin: 25% 0 0 15%;
+      width: 0 auto;
+      font-size: 22px;
+    }
+  </style>
+  <script type="text/javascript">
+    var quotes = [
+      "The pitcher cries for water to carry and a person for work that is real.",
+      "A lie can get halfway around the world before the truth has a chance to get its pants on."
+    ];
+    $(document).ready(function(){
+      var randIndex = Math.floor((Math.random() * quotes.length));
+      var thisQuote = quotes[randIndex];
+      $('#quote').html(thisQuote);
+    });
+  </script>
+</head>
+<body>
+<div class="container">
+  <q id="quote"></q>
+</div>
+</body>
+</html>
